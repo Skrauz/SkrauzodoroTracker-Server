@@ -24,11 +24,12 @@ export async function connectToDatabase(uri: string) {
 }
 
 async function applySchemaValidation(db: mongodb.Db) {
+  console.log("Applying schema validation...")
   const jsonSchema = {
     $jsonSchema: {
       bsonType: "object",
       required: ["mode", "startTime", "endTime"],
-      additionalProperties: false,
+      additionalProperties: true,
       properties: {
         _id: {},
         mode: {
