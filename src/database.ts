@@ -1,7 +1,11 @@
 import * as mongodb from "mongodb";
 import { Timespan } from "./timespanModel";
+import { Project } from "./projectModel";
 
-export const collections: { timespans?: mongodb.Collection<Timespan> } = {};
+export const collections: {
+  timespans?: mongodb.Collection<Timespan>;
+  projects?: mongodb.Collection<Project>;
+} = {};
 
 export async function connectToDatabase(uri: string) {
   console.log(`Connecting to the database...`);
@@ -19,13 +23,16 @@ export async function connectToDatabase(uri: string) {
   const db = client.db("SkrauzodoroDatabase");
   await applySchemaValidation(db);
 
+  const projectsCollection = db.collection<Project>("projects");
   const timespansCollection = db.collection<Timespan>("timespans");
+  collections.projects = projectsCollection;
   collections.timespans = timespansCollection;
 }
 
 async function applySchemaValidation(db: mongodb.Db) {
-  console.log("Applying schema validation...")
-  const jsonSchema = {
+  console.log("Applying schema validation...");
+
+  const timespansJsonSchema = {
     $jsonSchema: {
       bsonType: "object",
       required: ["mode", "startTime", "endTime"],
@@ -50,23 +57,53 @@ async function applySchemaValidation(db: mongodb.Db) {
     },
   };
 
+  const projectsJsonSchema = {
+    $jsonSchema: {
+      bsonType: "object",
+      additionalProperties: true,
+      properties: {
+        _id: {},
+      },
+    },
+  };
+
   // Try applying the modification to the collection, if the collection doesn't exist, create it
   await db
     .command({
       collMod: "timespans",
-      validator: jsonSchema,
+      validator: timespansJsonSchema,
     })
     .catch(async (error: mongodb.MongoServerError) => {
       if (error.codeName === "NamespaceNotFound") {
         console.log(
-          `Failed to find the collection. Creating new collection...`
+          `Failed to find the timespans collection. Creating new collection...`
         );
         await db
-          .createCollection("timespans", { validator: jsonSchema })
+          .createCollection("timespans", { validator: timespansJsonSchema })
           .then(() => console.log("Created new collection"))
           .catch((error) => {
             console.error(error);
           });
       }
     });
+
+  await db
+    .command({
+      collMod: "projects",
+      validator: projectsJsonSchema,
+    })
+    .catch(async (error: mongodb.MongoServerError) => {
+      if (error.codeName === "NamespaceNotFound") {
+        console.log(
+          `Failed to find the projects collection. Creating new collection...`
+        );
+        await db
+          .createCollection("projects", { validator: timespansJsonSchema })
+          .then(() => console.log("Created new collection"))
+          .catch((error) => {
+            console.error(error);
+          });
+      }
+    });
+
 }

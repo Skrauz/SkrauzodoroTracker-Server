@@ -5,7 +5,7 @@ import { collections } from "./database";
 export const appRouter = express.Router();
 appRouter.use(express.json());
 
-// Read
+// Read Timespans
 appRouter.get("/api/timespans", async (req, res) => {
   try {
     const timespans = await collections.timespans?.find({}).toArray()
@@ -17,7 +17,7 @@ appRouter.get("/api/timespans", async (req, res) => {
   }
 });
 
-// Create
+// Create Timespans
 appRouter.post("/api/timespans", async (req, res) => {
   try {
     const timespan = req.body;
