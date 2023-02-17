@@ -63,6 +63,10 @@ async function applySchemaValidation(db: mongodb.Db) {
       additionalProperties: true,
       properties: {
         _id: {},
+        name: {
+          bsonType: "string",
+          description: "'name' is required and is a string",
+        },
       },
     },
   };
@@ -84,6 +88,7 @@ async function applySchemaValidation(db: mongodb.Db) {
           .catch((error) => {
             console.error(error);
           });
+        await applySchemaValidation(db);
       }
     });
 
@@ -103,7 +108,7 @@ async function applySchemaValidation(db: mongodb.Db) {
           .catch((error) => {
             console.error(error);
           });
+        await applySchemaValidation(db);
       }
     });
-
 }
