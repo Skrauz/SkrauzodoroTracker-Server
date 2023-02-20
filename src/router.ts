@@ -55,37 +55,35 @@ appRouter.get("/api/projects/:name?", async (req, res) => {
     const query = { name: projectName };
     const project = await collections.projects?.findOne(query);
 
-    if(project) {
+    if (project) {
       res.status(200).send(project);
     } else {
       res.status(404).send(`Failed to find the project ${projectName}`);
     }
   } catch (error: any) {
-    res.status(500).send(error.message)
+    res.status(500).send(error.message);
   }
-})
+});
 
 // Create Projects
 appRouter.post("/api/projects", async (req, res) => {
-    try {
-      const project = req.body;
-      if (collections.projects) {
-        if(await hasDuplicates(project)) {
-          res.status(400).send(`Project ${project.name} must have unique name`);
-        }
-        const result = await collections.projects.insertOne(project);
-        if (result.acknowledged) {
-          res
-            .status(201)
-            .send(`Created a new project: ID ${result.insertedId}`);
-        } else {
-          res.status(500).send("Failed to create a new project");
-        }
+  try {
+    const project = req.body;
+    if (collections.projects) {
+      if (await hasDuplicates(project)) {
+        res.status(400).send(`Project ${project.name} must have unique name`);
       }
-    } catch (error: any) {
-      console.error(error);
-      res.status(400).send(error.message);
+      const result = await collections.projects.insertOne(project);
+      if (result.acknowledged) {
+        res.status(201).send(`Created a new project: ID ${result.insertedId}`);
+      } else {
+        res.status(500).send("Failed to create a new project");
+      }
     }
+  } catch (error: any) {
+    console.error(error);
+    res.status(400).send(error.message);
+  }
 });
 
 async function hasDuplicates(project: Project): Promise<boolean> {
@@ -103,33 +101,55 @@ async function hasDuplicates(project: Project): Promise<boolean> {
 }
 
 // Update Project
-appRouter.put("api/projects/:name?", async (req, res) => {
+appRouter.put("/api/projects/:id", async (req, res) => {
   try {
-    const projectName = req?.params?.name;
-    const project: Project = req.body;
+    if (collections.projects) {
+      const id = req?.params?.id;
+      
+      const project: Project = req.body;
+      const query = { _id: new mongodb.ObjectId(id) };
 
-    const query$ = { name: projectName };
-    const project$ = await collections.projects?.findOne(query$);
-    const query = { _id: new mongodb.ObjectId(project$?._id) };
-
-    const result = await collections.projects?.updateOne(query, {
-      $set: {_id: new mongodb.ObjectId(query._id)},
-    });
-
-    if(result && result.matchedCount) {
-      res.status(200).send(`Updated the project: Name: ${projectName}`);
-      return;
+      const result = await collections.projects.updateOne(query, {
+        $set: {
+          name: project.name,
+          _id: new mongodb.ObjectId(id)
+        },
+      });
+  
+      if (result && result.matchedCount) {
+        res.status(200).send(`Updated project: ID ${id}`);
+        return;
+      }
+      if (!result.matchedCount) {
+        res.status(404).send(`Could not find project: ID ${id}`);
+        return;
+      }
+      res.status(304).send(`Failed to update project: ID ${id}`);
     }
-
-    if(!result?.matchedCount) {
-      res.status(404).send(`Could not find the project: Name: ${projectName}`);
-      return;
-    }
-
-    res.status(304).send(`Failed to update the project: Name: ${projectName}`);
-
+  } catch (error: any) {
+    console.error(error);
+    res.status(400).send(error.message);
   }
-  catch (error: any) {
+});
+
+appRouter.delete("/api/projects/:id", async (req, res) => {
+  try {
+    if(collections.projects) {
+      const id = req?.params?.id;
+      const query = { _id: new mongodb.ObjectId(id) };
+      const result = await collections.projects.deleteOne(query);
+
+      if (result && result.deletedCount) {
+        res.status(202).send(`Deleted project: ID ${id}`);
+        return;
+      }
+      if (!result.deletedCount) {
+        res.status(404).send(`Failed to delete project: ID ${id}`);
+        return;
+      }
+      res.status(400).send(`Failed to delete project: ID ${id}`);
+    }
+  } catch(error: any) {
     console.error(error);
     res.status(400).send(error.message);
   }
