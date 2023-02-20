@@ -117,11 +117,11 @@ appRouter.put("/api/projects/:id", async (req, res) => {
       });
   
       if (result && result.matchedCount) {
-        res.status(200).send(`Update an project: ID ${id}`);
+        res.status(200).send(`Updated project: ID ${id}`);
         return;
       }
       if (!result.matchedCount) {
-        res.status(404).send(`Could not find proejct: ID ${id}`);
+        res.status(404).send(`Could not find project: ID ${id}`);
         return;
       }
       res.status(304).send(`Failed to update project: ID ${id}`);
@@ -131,3 +131,26 @@ appRouter.put("/api/projects/:id", async (req, res) => {
     res.status(400).send(error.message);
   }
 });
+
+appRouter.delete("/api/projects/:id", async (req, res) => {
+  try {
+    if(collections.projects) {
+      const id = req?.params?.id;
+      const query = { _id: new mongodb.ObjectId(id) };
+      const result = await collections.projects.deleteOne(query);
+
+      if (result && result.deletedCount) {
+        res.status(202).send(`Deleted project: ID ${id}`);
+        return;
+      }
+      if (!result.deletedCount) {
+        res.status(404).send(`Failed to delete project: ID ${id}`);
+        return;
+      }
+      res.status(400).send(`Failed to delete project: ID ${id}`);
+    }
+  } catch(error: any) {
+    console.error(error);
+    res.status(400).send(error.message);
+  }
+})
